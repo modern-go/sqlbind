@@ -200,6 +200,19 @@ func (rows *Rows) GetString(idx ColumnIndex) string {
 	panic(fmt.Sprintf("%v can not convert to string", obj))
 }
 
+func (rows *Rows) GetByteArray(idx ColumnIndex) []byte {
+	obj := rows.row[idx]
+	switch val := obj.(type) {
+	case []byte:
+		copied := make([]byte, len(val))
+		copy(copied, val)
+		return copied
+	case string:
+		return []byte(val)
+	}
+	panic(fmt.Sprintf("%v can not convert to []byte", obj))
+}
+
 func (rows *Rows) GetTime(idx ColumnIndex) time.Time {
 	obj := rows.row[idx]
 	asTime, ok := obj.(time.Time)

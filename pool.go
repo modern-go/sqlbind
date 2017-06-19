@@ -47,12 +47,12 @@ func (pool *Pool) Borrow() (*Conn, error) {
 
 func (pool *Pool) release(conn *Conn) error {
 	if conn.Error != nil {
-		return conn.Close()
+		return conn.obj.Close()
 	}
 	select {
 	case pool.conns <- conn:
 		return nil
 	default:
-		return conn.Close()
+		return conn.obj.Close()
 	}
 }
