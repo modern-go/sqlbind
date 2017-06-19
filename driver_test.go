@@ -107,11 +107,12 @@ func Test_insert(t *testing.T) {
 	conn.Exec(Translate("TRUNCATE account_event"))
 	stmt := conn.TranslateStatement(
 		"INSERT account_event :INSERT_COLUMNS",
-		"entity_id", "event_id", "data")
+		"entity_id", "event_id", "event_name", "data")
 	defer stmt.Close()
 	result, err := stmt.Exec(
 		"entity_id", "account1",
 		"event_id", int64(1),
+		"event_name", "created",
 		"data", "{}")
 	should.Nil(err)
 	rowsAffected, err := result.RowsAffected()
@@ -127,17 +128,19 @@ func Test_batch_insert(t *testing.T) {
 	defer conn.Close()
 	conn.Exec(Translate("TRUNCATE account_event"))
 	stmt := conn.TranslateStatement("INSERT account_event :BATCH_INSERT_COLUMNS",
-		BatchInsertColumns(2, "entity_id", "event_id", "data"))
+		BatchInsertColumns(2, "entity_id", "event_id", "event_name", "data"))
 	should.Nil(err)
 	defer stmt.Close()
 	result, err := stmt.Exec(
 		BatchInsertRow(
 			"entity_id", "account1",
 			"event_id", int64(1),
+			"event_name", "created",
 			"data", "{}"),
 		BatchInsertRow(
 			"entity_id", "account1",
 			"event_id", int64(2),
+			"event_name", "bill1_transfer",
 			"data", "{}"))
 	should.Nil(err)
 	rowsAffected, err := result.RowsAffected()
