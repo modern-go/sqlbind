@@ -1,0 +1,2 @@
+# psql
+write sql faster
