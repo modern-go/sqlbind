@@ -1,4 +1,4 @@
-package psql
+package dingo
 
 import (
 	"github.com/stretchr/testify/require"

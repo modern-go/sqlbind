@@ -1,2 +1,2 @@
-# psql
+# dingo
 write sql faster
