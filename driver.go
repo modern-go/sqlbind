@@ -6,24 +6,11 @@ import (
 	"os"
 	"strings"
 	"time"
+	"github.com/v2pro/plz"
 )
 
 func Join(columns ...string) string {
 	return strings.Join(columns, ", ")
-}
-
-type ColumnGroup struct {
-	Group                string
-	Columns              []string
-	BatchInsertRowsCount int
-}
-
-func Columns(group string, columns ...string) ColumnGroup {
-	return ColumnGroup{group, columns, 0}
-}
-
-func BatchInsertColumns(batchInsertRowsCount int, columns ...string) ColumnGroup {
-	return ColumnGroup{"COLUMNS", columns, batchInsertRowsCount}
 }
 
 func Tuple(vals ...interface{}) string {
@@ -48,7 +35,7 @@ type Conn struct {
 	onClose         func(conn *Conn) error
 }
 
-func Open(drv driver.Driver, dsn string) (*Conn, error) {
+func Open(drv driver.Driver, dsn string) (plz.SqlConn, error) {
 	conn, err := drv.Open(dsn)
 	if err != nil {
 		return nil, err
@@ -56,13 +43,13 @@ func Open(drv driver.Driver, dsn string) (*Conn, error) {
 	return &Conn{conn, nil, "", nil, nil, nil}, nil
 }
 
-func (conn *Conn) TranslateStatement(sql string, columns ...interface{}) *Stmt {
+func (conn *Conn) TranslateStatement(sql string, columns ...interface{}) plz.SqlStmt {
 	translatedSql := Translate(sql, columns...)
-	return &Stmt{conn, map[string]driver.Stmt{}, translatedSql}
+	return &Stmt{conn, map[string]driver.Stmt{}, translatedSql.(*TranslatedSql)}
 }
 
-func (conn *Conn) Statement(translatedSql *TranslatedSql) *Stmt {
-	return &Stmt{conn, map[string]driver.Stmt{}, translatedSql}
+func (conn *Conn) Statement(translatedSql plz.TranslatedSql) plz.SqlStmt {
+	return &Stmt{conn, map[string]driver.Stmt{}, translatedSql.(*TranslatedSql)}
 }
 
 func (conn *Conn) Close() error {
@@ -144,7 +131,7 @@ func (stmt *Stmt) Exec(inputs ...driver.Value) (driver.Result, error) {
 	return result, err
 }
 
-func (stmt *Stmt) Query(inputs ...driver.Value) (*Rows, error) {
+func (stmt *Stmt) Query(inputs ...driver.Value) (plz.SqlRows, error) {
 	if stmt.conn.activeQuerySql != "" {
 		return nil, fmt.Errorf("there is another active query in progress\nsql: %v\nargs: %v",
 			stmt.conn.activeQuerySql, stmt.conn.activeQueryArgs)
@@ -169,9 +156,9 @@ func (stmt *Stmt) Query(inputs ...driver.Value) (*Rows, error) {
 		stmt.conn.Error = err
 		return nil, fmt.Errorf("%s\nsql: %v\nargs: %v", err.Error(), formattedSql, queryArgs)
 	}
-	columns := map[string]ColumnIndex{}
+	columns := map[string]plz.ColumnIndex{}
 	for idx, column := range rows.Columns() {
-		columns[column] = ColumnIndex(idx)
+		columns[column] = plz.ColumnIndex(idx)
 	}
 	stmt.conn.activeQuerySql = formattedSql
 	stmt.conn.activeQueryArgs = queryArgs

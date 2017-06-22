@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode"
 	"unsafe"
+	"github.com/v2pro/plz"
 )
 
 /*
@@ -29,7 +30,7 @@ func NewTranslatedSql(sql string, argMap map[string][]int, strParamCount int, to
 	return &TranslatedSql{sql, argMap, strParamCount, totalParamCount}
 }
 
-func Translate(sql string, columns ...interface{}) *TranslatedSql {
+func Translate(sql string, columns ...interface{}) plz.TranslatedSql {
 	columnGroups := spitIntoGroups(columns)
 	sqlAsBytes := *(*[]byte)(unsafe.Pointer(&sql))
 	buf := bytes.NewBuffer(make([]byte, 0, len(sql)))
@@ -89,14 +90,14 @@ func Translate(sql string, columns ...interface{}) *TranslatedSql {
 	return &TranslatedSql{buf.String(), strParamMap.paramMap, strParamCount, paramMap.currentPos + strParamCount}
 }
 
-func spitIntoGroups(ungrouped []interface{}) map[string]*ColumnGroup {
-	grouped := map[string]*ColumnGroup{}
-	grouped["COLUMNS"] = &ColumnGroup{"COLUMNS", make([]string, 0), 0}
+func spitIntoGroups(ungrouped []interface{}) map[string]*plz.ColumnGroup {
+	grouped := map[string]*plz.ColumnGroup{}
+	grouped["COLUMNS"] = &plz.ColumnGroup{"COLUMNS", make([]string, 0), 0}
 	for _, columnOrGroup := range ungrouped {
 		switch typed := columnOrGroup.(type) {
 		case string:
 			grouped["COLUMNS"].Columns = append(grouped["COLUMNS"].Columns, typed)
-		case ColumnGroup:
+		case plz.ColumnGroup:
 			grouped[typed.Group] = &typed
 		default:
 			panic(fmt.Sprintf("unexpected column argument: %v", columnOrGroup))
@@ -134,7 +135,7 @@ func (ntp *nameToPositions) merge(that *nameToPositions) {
 	}
 }
 
-func addVar(varName string, columnGroups map[string]*ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
+func addVar(varName string, columnGroups map[string]*plz.ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
 	if strings.HasPrefix(varName, "BATCH_INSERT_") {
 		addVar_BATCH_INSERT(varName, columnGroups, buf, paramMap, strParamMap)
 		return
@@ -168,7 +169,7 @@ func addVar(varName string, columnGroups map[string]*ColumnGroup, buf *bytes.Buf
 	buf.WriteByte('?')
 }
 
-func addVar_BATCH_INSERT(varName string, columnGroups map[string]*ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
+func addVar_BATCH_INSERT(varName string, columnGroups map[string]*plz.ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
 	group := varName[len("BATCH_INSERT_"):]
 	columns, found := columnGroups[group]
 	if !found {
@@ -207,7 +208,7 @@ func addVar_BATCH_INSERT(varName string, columnGroups map[string]*ColumnGroup, b
 	}
 }
 
-func addVar_INSERT(varName string, columnGroups map[string]*ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
+func addVar_INSERT(varName string, columnGroups map[string]*plz.ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
 	group := varName[len("INSERT_"):]
 	columns, found := columnGroups[group]
 	if !found {
@@ -237,7 +238,7 @@ func addVar_INSERT(varName string, columnGroups map[string]*ColumnGroup, buf *by
 	buf.WriteByte(')')
 }
 
-func addVar_UPDATE(varName string, columnGroups map[string]*ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
+func addVar_UPDATE(varName string, columnGroups map[string]*plz.ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
 	group := varName[len("UPDATE_"):]
 	columns, found := columnGroups[group]
 	if !found {
@@ -257,7 +258,7 @@ func addVar_UPDATE(varName string, columnGroups map[string]*ColumnGroup, buf *by
 	}
 }
 
-func addVar_SELECT(varName string, columnGroups map[string]*ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
+func addVar_SELECT(varName string, columnGroups map[string]*plz.ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
 	group := varName[len("SELECT_"):]
 	columns, found := columnGroups[group]
 	if !found {
@@ -266,7 +267,7 @@ func addVar_SELECT(varName string, columnGroups map[string]*ColumnGroup, buf *by
 	buf.WriteString(Join(columns.Columns...))
 }
 
-func addVar_HINT(varName string, columnGroups map[string]*ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
+func addVar_HINT(varName string, columnGroups map[string]*plz.ColumnGroup, buf *bytes.Buffer, paramMap *nameToPositions, strParamMap *nameToPositions) {
 	group := varName[len("HINT_"):]
 	columns, found := columnGroups[group]
 	if !found {

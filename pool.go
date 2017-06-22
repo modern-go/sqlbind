@@ -36,12 +36,12 @@ func (pool *Pool) Borrow() (*Conn, error) {
 		if err != nil {
 			return nil, err
 		}
-		conn.onClose = func(conn *Conn) error {
+		conn.(*Conn).onClose = func(conn *Conn) error {
 			atomic.AddInt32(&pool.activeCount, -1)
 			conn.onClose = pool.release
 			return pool.release(conn)
 		}
-		return conn, nil
+		return conn.(*Conn), nil
 	}
 }
 
