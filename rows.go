@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/v2pro/plz"
+	"github.com/v2pro/plz/sql"
 )
 
 var DefaultLocation *time.Location
@@ -23,7 +23,7 @@ func init() {
 type Rows struct {
 	conn    *Conn
 	obj     driver.Rows
-	columns map[string]plz.ColumnIndex
+	columns map[string]sql.ColumnIndex
 	row     []driver.Value
 }
 
@@ -31,7 +31,7 @@ func (rows *Rows) Columns() []string {
 	return rows.obj.Columns()
 }
 
-func (rows *Rows) C(column string) plz.ColumnIndex {
+func (rows *Rows) C(column string) sql.ColumnIndex {
 	idx, found := rows.columns[column]
 	if !found {
 		panic("column " + column + " not found")
@@ -174,7 +174,7 @@ func (rows *Rows) Next() error {
 	return rows.obj.Next(rows.row)
 }
 
-func (rows *Rows) Get(idx plz.ColumnIndex) interface{} {
+func (rows *Rows) Get(idx sql.ColumnIndex) interface{} {
 	obj := rows.row[idx]
 	switch val := obj.(type) {
 	case []byte:
@@ -188,7 +188,7 @@ func (rows *Rows) GetByName(name string) interface{} {
 	return rows.row[rows.C(name)]
 }
 
-func (rows *Rows) GetString(idx plz.ColumnIndex) string {
+func (rows *Rows) GetString(idx sql.ColumnIndex) string {
 	obj := rows.row[idx]
 	switch val := obj.(type) {
 	case []byte:
@@ -199,7 +199,7 @@ func (rows *Rows) GetString(idx plz.ColumnIndex) string {
 	panic(fmt.Sprintf("%v can not convert to string", obj))
 }
 
-func (rows *Rows) GetByteArray(idx plz.ColumnIndex) []byte {
+func (rows *Rows) GetByteArray(idx sql.ColumnIndex) []byte {
 	obj := rows.row[idx]
 	switch val := obj.(type) {
 	case []byte:
@@ -212,7 +212,7 @@ func (rows *Rows) GetByteArray(idx plz.ColumnIndex) []byte {
 	panic(fmt.Sprintf("%v can not convert to []byte", obj))
 }
 
-func (rows *Rows) GetTime(idx plz.ColumnIndex) time.Time {
+func (rows *Rows) GetTime(idx sql.ColumnIndex) time.Time {
 	obj := rows.row[idx]
 	asTime, ok := obj.(time.Time)
 	if ok {
@@ -225,7 +225,7 @@ func (rows *Rows) GetTime(idx plz.ColumnIndex) time.Time {
 	return val
 }
 
-func (rows *Rows) GetInt64(idx plz.ColumnIndex) int64 {
+func (rows *Rows) GetInt64(idx sql.ColumnIndex) int64 {
 	obj := rows.Get(idx)
 	switch val := obj.(type) {
 	case int64:
@@ -252,6 +252,6 @@ func (rows *Rows) GetInt64(idx plz.ColumnIndex) int64 {
 	panic(fmt.Sprintf("%v can not convert to int", obj))
 }
 
-func (rows *Rows) GetInt(idx plz.ColumnIndex) int {
+func (rows *Rows) GetInt(idx sql.ColumnIndex) int {
 	return int(rows.GetInt64(idx))
 }

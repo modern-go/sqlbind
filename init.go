@@ -1,8 +1,11 @@
 package dingo
 
-import "github.com/v2pro/plz"
+import (
+	"github.com/v2pro/plz"
+	"github.com/v2pro/plz/sql"
+)
 
 func init() {
-	plz.TranslateSql = Translate
-	plz.SqlOpen = Open
+	sql.Translate = Translate
+	plz.OpenSqlConn = Open
 }

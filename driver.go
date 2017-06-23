@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 	"time"
-	"github.com/v2pro/plz"
+	"github.com/v2pro/plz/sql"
 )
 
 func Join(columns ...string) string {
@@ -35,7 +35,7 @@ type Conn struct {
 	onClose         func(conn *Conn) error
 }
 
-func Open(drv driver.Driver, dsn string) (plz.SqlConn, error) {
+func Open(drv driver.Driver, dsn string) (sql.Conn, error) {
 	conn, err := drv.Open(dsn)
 	if err != nil {
 		return nil, err
@@ -43,12 +43,12 @@ func Open(drv driver.Driver, dsn string) (plz.SqlConn, error) {
 	return &Conn{conn, nil, "", nil, nil, nil}, nil
 }
 
-func (conn *Conn) TranslateStatement(sql string, columns ...interface{}) plz.SqlStmt {
+func (conn *Conn) TranslateStatement(sql string, columns ...interface{}) sql.Stmt {
 	translatedSql := Translate(sql, columns...)
 	return &Stmt{conn, map[string]driver.Stmt{}, translatedSql.(*TranslatedSql)}
 }
 
-func (conn *Conn) Statement(translatedSql plz.TranslatedSql) plz.SqlStmt {
+func (conn *Conn) Statement(translatedSql sql.Translated) sql.Stmt {
 	return &Stmt{conn, map[string]driver.Stmt{}, translatedSql.(*TranslatedSql)}
 }
 
@@ -131,7 +131,7 @@ func (stmt *Stmt) Exec(inputs ...driver.Value) (driver.Result, error) {
 	return result, err
 }
 
-func (stmt *Stmt) Query(inputs ...driver.Value) (plz.SqlRows, error) {
+func (stmt *Stmt) Query(inputs ...driver.Value) (sql.Rows, error) {
 	if stmt.conn.activeQuerySql != "" {
 		return nil, fmt.Errorf("there is another active query in progress\nsql: %v\nargs: %v",
 			stmt.conn.activeQuerySql, stmt.conn.activeQueryArgs)
@@ -156,9 +156,9 @@ func (stmt *Stmt) Query(inputs ...driver.Value) (plz.SqlRows, error) {
 		stmt.conn.Error = err
 		return nil, fmt.Errorf("%s\nsql: %v\nargs: %v", err.Error(), formattedSql, queryArgs)
 	}
-	columns := map[string]plz.ColumnIndex{}
+	columns := map[string]sql.ColumnIndex{}
 	for idx, column := range rows.Columns() {
-		columns[column] = plz.ColumnIndex(idx)
+		columns[column] = sql.ColumnIndex(idx)
 	}
 	stmt.conn.activeQuerySql = formattedSql
 	stmt.conn.activeQueryArgs = queryArgs
